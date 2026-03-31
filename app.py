@@ -23,19 +23,19 @@ if __name__ == "__main__":
     except socket.gaierror:
         local_ip = "127.0.0.1"
 
+    import sys
+    port = 8060
+    for i, arg in enumerate(sys.argv):
+        if arg == "--port" and i + 1 < len(sys.argv):
+            port = int(sys.argv[i + 1])
+
     print("Starting Torque Cell DAQ Dashboard...")
-    print(f"  Local:   http://localhost:8050")
-    print(f"  Network: http://{local_ip}:8050")
+    print(f"  Local:   http://localhost:{port}")
+    print(f"  Network: http://{local_ip}:{port}")
     print()
     print("If accessing from another device, ensure the port is allowed through the firewall.")
     print()
     print("If you get a socket permissions error, try running as Administrator")
     print("or set a custom port: python app.py --port 8060")
-
-    import sys
-    port = 8050
-    for i, arg in enumerate(sys.argv):
-        if arg == "--port" and i + 1 < len(sys.argv):
-            port = int(sys.argv[i + 1])
 
     app.run(debug=True, host="0.0.0.0", port=port)

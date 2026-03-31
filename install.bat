@@ -1,12 +1,25 @@
 @echo off
+:: Change to the directory where this script lives
+cd /d "%~dp0"
+
 echo ============================================
 echo  Torque Cell DAQ - Windows Setup
 echo ============================================
 echo.
 
-:: Check Python is installed
+:: Find Python - try "python" first, then "py" (Windows Launcher)
+set PYTHON_CMD=
 python --version >nul 2>&1
-if errorlevel 1 (
+if not errorlevel 1 (
+    set PYTHON_CMD=python
+) else (
+    py --version >nul 2>&1
+    if not errorlevel 1 (
+        set PYTHON_CMD=py
+    )
+)
+
+if "%PYTHON_CMD%"=="" (
     echo ERROR: Python is not installed or not in PATH.
     echo Download from https://www.python.org/downloads/
     echo Make sure to check "Add Python to PATH" during install.
@@ -14,9 +27,12 @@ if errorlevel 1 (
     exit /b 1
 )
 
+echo Found Python: %PYTHON_CMD%
+%PYTHON_CMD% --version
+
 :: Create virtual environment
 echo Creating virtual environment...
-python -m venv venv
+%PYTHON_CMD% -m venv venv
 if errorlevel 1 (
     echo ERROR: Failed to create virtual environment.
     pause

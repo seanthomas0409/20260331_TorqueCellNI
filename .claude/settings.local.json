@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd //c install.bat)",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Accounts\\\\SeanThomas\\\\Python\\\\20260331_TorqueCellNI && install.bat\" 2>&1)",
+      "Bash(cmd.exe /c \"cd /d C:\\\\Accounts\\\\SeanThomas\\\\Python\\\\20260331_TorqueCellNI && call install.bat\" 2>&1)",
+      "Bash(xxd \"C:/Accounts/SeanThomas/Python/20260331_TorqueCellNI/install.bat\")",
+      "Bash(powershell.exe -Command \"Set-Location 'C:\\\\Accounts\\\\SeanThomas\\\\Python\\\\20260331_TorqueCellNI'; cmd.exe /c install.bat 2>&1\")",
+      "Bash(powershell.exe -Command \"cmd.exe /c 'C:\\\\Accounts\\\\SeanThomas\\\\Python\\\\20260331_TorqueCellNI\\\\install.bat' 2>&1\")",
+      "Bash(powershell.exe -Command \"Get-Command py -ErrorAction SilentlyContinue | Select-Object Source; Get-Command python3 -ErrorAction SilentlyContinue | Select-Object Source\")",
+      "Read(//c/Program Files/**)",
+      "Bash(ls \"C:/Python\"*)",
+      "Read(//c/Accounts/SeanThomas/Python/20260331_TorqueCellNI/$LOCALAPPDATA/Programs/Python/**)",
+      "Read(//c/Users/Anatomics/AppData/Local/Programs/**)",
+      "Bash(powershell.exe -Command \"cmd.exe /c 'C:\\\\Accounts\\\\SeanThomas\\\\Python\\\\20260331_TorqueCellNI\\\\start.bat'\" 2>&1)",
+      "Bash(powershell.exe -Command \"Get-NetTCPConnection -LocalPort 8060 -ErrorAction SilentlyContinue | Select-Object OwningProcess | ForEach-Object { Stop-Process -Id \\\\$_.OwningProcess -Force }\" 2>&1)",
+      "Bash(taskkill //f //im python.exe)",
+      "Bash(taskkill //f //im python3.14.exe)",
+      "Bash(powershell.exe -Command \"Get-NetTCPConnection -LocalPort 8060 -ErrorAction SilentlyContinue | Select-Object LocalPort,State,OwningProcess\")",
+      "Bash(powershell.exe -Command \"Get-NetTCPConnection -LocalPort 8050 -ErrorAction SilentlyContinue | Select-Object LocalPort,State,OwningProcess\")",
+      "Bash(tasklist)",
+      "Bash(venv/Scripts/python.exe app.py --port 8060)",
+      "Bash(curl:*)",
+      "Bash(venv/Scripts/python.exe -c \":*)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d,indent=2\\)[:3000]\\)\")",
+      "Bash(\"C:/Accounts/SeanThomas/Python/20260331_TorqueCellNI/venv/Scripts/python.exe\" -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d,indent=2\\)[:3000]\\)\")"
+    ]
+  }
+}

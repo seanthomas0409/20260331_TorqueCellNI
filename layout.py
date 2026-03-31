@@ -1,7 +1,7 @@
 # layout.py
 from dash import dcc, html
 
-from config import AVAILABLE_CHANNELS, DEFAULT_CHANNEL, DEFAULT_SAMPLE_RATE, VALID_VOLTAGE_RANGES
+from config import AVAILABLE_CHANNELS, DEFAULT_CHANNEL, DEFAULT_SAMPLE_RATE, HARDWARE_DETECTED, VALID_VOLTAGE_RANGES
 
 # -- Reusable style constants --
 FONT = "'Segoe UI', system-ui, -apple-system, sans-serif"
@@ -135,6 +135,28 @@ def create_layout() -> html.Div:
                     ),
                     # Nav items
                     _nav_item("\u25C9", "Dashboard", active=True),
+                    # Hardware status
+                    html.Div(
+                        style={
+                            "margin": "16px 12px",
+                            "padding": "10px 12px",
+                            "borderRadius": "10px",
+                            "fontSize": "12px",
+                            "background": "rgba(166,227,161,0.1)" if HARDWARE_DETECTED else "rgba(249,226,175,0.1)",
+                            "color": ACCENT_GREEN if HARDWARE_DETECTED else ACCENT_YELLOW,
+                            "border": f"1px solid {'rgba(166,227,161,0.2)' if HARDWARE_DETECTED else 'rgba(249,226,175,0.2)'}",
+                        },
+                        children=[
+                            html.Div(
+                                f"\u25CF {'Hardware Connected' if HARDWARE_DETECTED else 'No NI Device Found'}",
+                                style={"fontWeight": "600", "marginBottom": "4px"},
+                            ),
+                            html.Div(
+                                "NI-DAQmx ready" if HARDWARE_DETECTED else "Demo mode available",
+                                style={"fontSize": "11px", "opacity": "0.8"},
+                            ),
+                        ],
+                    ),
                     # Spacer
                     html.Div(style={"flex": "1"}),
                     # Mode section
