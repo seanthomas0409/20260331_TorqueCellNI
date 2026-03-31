@@ -27,6 +27,40 @@ _reader: DAQReader | None = None
 _logger_thread: DataLogger | None = None
 _calibration: Calibration = Calibration()
 
+# Style constants
+_BG_SURFACE = "#1e1e2e"
+_ACCENT_GREEN = "#a6e3a1"
+_ACCENT_RED = "#f38ba8"
+_ACCENT_YELLOW = "#f9e2af"
+_ACCENT_BLUE = "#89b4fa"
+_TEXT_SEC = "#6c7086"
+_TEXT_DIM = "#585b70"
+
+_TOGGLE_BASE = {
+    "padding": "10px 20px",
+    "border": "none",
+    "borderRadius": "10px",
+    "fontWeight": "600",
+    "fontSize": "14px",
+    "cursor": "pointer",
+    "color": _BG_SURFACE,
+}
+_TH_STYLE = {
+    "textAlign": "left",
+    "padding": "8px 12px",
+    "color": _TEXT_SEC,
+    "fontWeight": "600",
+    "fontSize": "11px",
+    "textTransform": "uppercase",
+    "letterSpacing": "0.5px",
+    "borderBottom": "1px solid #313244",
+}
+_TD_STYLE = {
+    "padding": "8px 12px",
+    "borderBottom": "1px solid rgba(49,50,68,0.5)",
+    "color": "#bac2de",
+}
+
 
 def register_callbacks(app: Dash) -> None:
 
@@ -36,8 +70,8 @@ def register_callbacks(app: Dash) -> None:
     )
     def toggle_timed_duration(mode: str):
         if mode == "timed":
-            return {"display": "block", "marginBottom": "15px"}
-        return {"display": "none", "marginBottom": "15px"}
+            return {"display": "block", "padding": "8px 12px"}
+        return {"display": "none", "padding": "8px 12px"}
 
     @app.callback(
         Output("linear-cal-container", "style"),
@@ -88,32 +122,14 @@ def register_callbacks(app: Dash) -> None:
         State("session-state", "data"),
     )
     def handle_toggle(
-        n_clicks,
-        mode,
-        channel,
-        sample_rate,
-        voltage_range,
-        timed_duration,
-        cal_mode,
-        cal_slope,
-        cal_offset,
-        session_state,
+        n_clicks, mode, channel, sample_rate, voltage_range,
+        timed_duration, cal_mode, cal_slope, cal_offset, session_state,
     ):
         global _reader, _logger_thread, _calibration, _data_queue, _plot_buffer
         global _stop_event, _error_event
 
-        btn_base = {
-            "width": "100%",
-            "padding": "12px",
-            "border": "none",
-            "borderRadius": "5px",
-            "cursor": "pointer",
-            "fontWeight": "bold",
-            "fontSize": "14px",
-            "marginBottom": "15px",
-        }
-        start_style = {**btn_base, "backgroundColor": "#a6e3a1", "color": "#1e1e2e"}
-        stop_style = {**btn_base, "backgroundColor": "#f38ba8", "color": "#1e1e2e"}
+        start_style = {**_TOGGLE_BASE, "backgroundColor": _ACCENT_GREEN}
+        stop_style = {**_TOGGLE_BASE, "backgroundColor": _ACCENT_RED}
 
         if not n_clicks:
             return no_update, no_update, no_update, no_update
@@ -121,7 +137,6 @@ def register_callbacks(app: Dash) -> None:
         is_running = session_state.get("running", False)
 
         if not is_running:
-            # START recording
             _stop_event.clear()
             _error_event.clear()
             _data_queue = queue.Queue()
@@ -175,112 +190,142 @@ def register_callbacks(app: Dash) -> None:
                 timer.daemon = True
                 timer.start()
 
-            return (
-                {"running": True, "demo_mode": demo_mode},
-                False,
-                "Stop Recording",
-                stop_style,
-            )
+            return {"running": True, "demo_mode": demo_mode}, False, "Stop Recording", stop_style
 
         else:
-            # STOP recording
             _stop_event.set()
-            return (
-                {"running": False, "demo_mode": False},
-                True,
-                "Start Recording",
-                start_style,
-            )
+            return {"running": False, "demo_mode": False}, True, "Start Recording", start_style
 
     @app.callback(
         Output("live-plot", "figure"),
-        Output("status-connection", "children"),
-        Output("status-value", "children"),
-        Output("status-elapsed", "children"),
-        Output("status-samples", "children"),
+        Output("topbar-config-badge", "children"),
+        Output("topbar-status-badge", "children"),
+        Output("topbar-status-badge", "style"),
+        Output("kpi-voltage-value", "children"),
+        Output("kpi-voltage-sub", "children"),
+        Output("kpi-torque-value", "children"),
+        Output("kpi-torque-sub", "children"),
+        Output("kpi-elapsed-value", "children"),
+        Output("kpi-elapsed-sub", "children"),
+        Output("kpi-samples-value", "children"),
+        Output("kpi-samples-sub", "children"),
         Output("data-table", "children"),
         Input("update-interval", "n_intervals"),
         State("session-state", "data"),
+        State("channel-selector", "value"),
+        State("sample-rate-input", "value"),
+        State("voltage-range-selector", "value"),
     )
-    def update_live_display(n_intervals, session_state):
+    def update_live_display(n_intervals, session_state, channel, sample_rate, voltage_range):
+        config_str = f"{channel or 'Dev1/ai0'}  \u2022  {sample_rate or 100} Hz  \u2022  \u00b1{voltage_range or 5}V"
+
+        badge_base = {"padding": "8px 16px", "borderRadius": "10px", "fontSize": "13px"}
+
         samples = list(_plot_buffer)
         if not samples:
             empty_fig = go.Figure()
             empty_fig.update_layout(
                 template="plotly_dark",
-                paper_bgcolor="#181825",
+                paper_bgcolor="#11111b",
                 plot_bgcolor="#181825",
                 xaxis_title="Elapsed Time (s)",
                 yaxis_title="Voltage (V)",
-                margin=dict(l=50, r=20, t=30, b=50),
+                margin=dict(l=50, r=20, t=10, b=40),
             )
-            return empty_fig, "● Waiting", "-- V", "0.0 s", "0 samples", []
+            is_running = session_state.get("running", False)
+            status_text = "\u25CF Running" if is_running else "\u25CF Idle"
+            status_style = {**badge_base, "color": _ACCENT_GREEN if is_running else _TEXT_SEC, "background": "rgba(166,227,161,0.1)" if is_running else "#313244"}
+            return (
+                empty_fig, config_str, status_text, status_style,
+                "-- V", "Waiting for data",
+                "-- Nm", "No calibration" if _calibration.mode == "none" else f"Linear: {_calibration.slope}x + {_calibration.offset}",
+                "0.0 s", "Not recording",
+                "0", "No data",
+                [],
+            )
 
         elapsed = [s["elapsed_s"] for s in samples]
         voltages = [s["voltage"] for s in samples]
 
         fig = go.Figure()
         fig.add_trace(go.Scattergl(
-            x=elapsed,
-            y=voltages,
-            mode="lines",
-            name="Voltage",
-            line=dict(color="#89b4fa", width=1.5),
+            x=elapsed, y=voltages, mode="lines", name="Voltage",
+            line=dict(color=_ACCENT_BLUE, width=1.5),
         ))
 
         torques = [_calibration.convert(v) for v in voltages]
-        if torques and torques[0] is not None:
+        has_torque = torques and torques[0] is not None
+        if has_torque:
             fig.add_trace(go.Scattergl(
-                x=elapsed,
-                y=torques,
-                mode="lines",
-                name="Torque (Nm)",
-                yaxis="y2",
-                line=dict(color="#a6e3a1", width=1.5),
+                x=elapsed, y=torques, mode="lines", name="Torque (Nm)",
+                yaxis="y2", line=dict(color=_ACCENT_GREEN, width=1.5),
             ))
             fig.update_layout(
-                yaxis2=dict(
-                    title="Torque (Nm)",
-                    overlaying="y",
-                    side="right",
-                    showgrid=False,
-                ),
+                yaxis2=dict(title="Torque (Nm)", overlaying="y", side="right", showgrid=False),
             )
 
         fig.update_layout(
             template="plotly_dark",
-            paper_bgcolor="#181825",
+            paper_bgcolor="#11111b",
             plot_bgcolor="#181825",
             xaxis_title="Elapsed Time (s)",
             yaxis_title="Voltage (V)",
-            margin=dict(l=50, r=50, t=30, b=50),
-            legend=dict(x=0, y=1.1, orientation="h"),
+            margin=dict(l=50, r=50, t=10, b=40),
+            legend=dict(x=0, y=1.12, orientation="h"),
         )
 
         latest = samples[-1]
         is_running = session_state.get("running", False)
         demo = session_state.get("demo_mode", False)
-        conn_str = "● Demo Mode" if demo else ("● Connected" if is_running else "● Stopped")
 
-        value_str = f"{latest['voltage']:.4f} V"
-        elapsed_str = f"{latest['elapsed_s']:.1f} s"
-        count_str = f"{len(samples)} samples"
+        if demo:
+            status_text = "\u25CF Demo Mode"
+            status_style = {**badge_base, "color": _ACCENT_YELLOW, "background": "rgba(249,226,175,0.1)"}
+        elif is_running:
+            status_text = "\u25CF Connected"
+            status_style = {**badge_base, "color": _ACCENT_GREEN, "background": "rgba(166,227,161,0.1)"}
+        else:
+            status_text = "\u25CF Stopped"
+            status_style = {**badge_base, "color": _ACCENT_RED, "background": "rgba(243,139,168,0.1)"}
+
+        voltage_val = f"{latest['voltage']:.4f} V"
+        voltage_sub = f"Updated {latest['elapsed_s']:.2f}s"
+        torque_val = f"{torques[-1]:.2f} Nm" if has_torque else "-- Nm"
+        torque_sub = f"Linear: {_calibration.slope}x + {_calibration.offset}" if _calibration.mode == "linear" else ("File-based" if _calibration.mode == "file" else "No calibration")
+        elapsed_val = f"{latest['elapsed_s']:.1f} s"
+        elapsed_sub = f"{'Continuous' if session_state.get('running') else 'Stopped'} mode"
+        samples_val = f"{len(samples):,}"
+        samples_sub = "In plot buffer"
 
         header = html.Tr([
-            html.Th("Timestamp", style={"padding": "5px", "borderBottom": "1px solid #45475a"}),
-            html.Th("Elapsed (s)", style={"padding": "5px", "borderBottom": "1px solid #45475a"}),
-            html.Th("Voltage (V)", style={"padding": "5px", "borderBottom": "1px solid #45475a"}),
+            html.Th("Timestamp", style=_TH_STYLE),
+            html.Th("Elapsed", style=_TH_STYLE),
+            html.Th("Voltage", style=_TH_STYLE),
+            html.Th("Torque", style=_TH_STYLE),
         ])
         rows = []
         for s in samples[-10:]:
+            t = _calibration.convert(s["voltage"])
+            t_str = f"{t:.2f} Nm" if t is not None else "--"
+            ts = s["timestamp"]
+            if "T" in ts:
+                ts = ts.split("T")[1][:12]
             rows.append(html.Tr([
-                html.Td(s["timestamp"], style={"padding": "3px"}),
-                html.Td(f"{s['elapsed_s']:.4f}", style={"padding": "3px"}),
-                html.Td(f"{s['voltage']:.6f}", style={"padding": "3px"}),
+                html.Td(ts, style=_TD_STYLE),
+                html.Td(f"{s['elapsed_s']:.3f}s", style=_TD_STYLE),
+                html.Td(f"{s['voltage']:.4f} V", style=_TD_STYLE),
+                html.Td(t_str, style=_TD_STYLE),
             ]))
         table = [html.Thead(header), html.Tbody(rows)]
 
-        return fig, conn_str, value_str, elapsed_str, count_str, table
+        return (
+            fig, config_str, status_text, status_style,
+            voltage_val, voltage_sub,
+            torque_val, torque_sub,
+            elapsed_val, elapsed_sub,
+            samples_val, samples_sub,
+            table,
+        )
 
     @app.callback(
         Output("csv-download", "data"),
@@ -295,8 +340,5 @@ def register_callbacks(app: Dash) -> None:
         for s in samples:
             torque = _calibration.convert(s["voltage"])
             torque_str = f"{torque:.4f}" if torque is not None else ""
-            lines.append(
-                f"{s['timestamp']},{s['elapsed_s']:.6f},{s['voltage']:.6f},{torque_str}\n"
-            )
-        content = "".join(lines)
-        return dict(content=content, filename="torque_export.csv")
+            lines.append(f"{s['timestamp']},{s['elapsed_s']:.6f},{s['voltage']:.6f},{torque_str}\n")
+        return dict(content="".join(lines), filename="torque_export.csv")
