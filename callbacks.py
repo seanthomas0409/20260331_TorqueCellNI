@@ -74,8 +74,9 @@ def register_callbacks(app: Dash) -> None:
     @app.callback(
         Output("session-state", "data"),
         Output("update-interval", "disabled"),
-        Input("start-btn", "n_clicks"),
-        Input("stop-btn", "n_clicks"),
+        Output("toggle-btn", "children"),
+        Output("toggle-btn", "style"),
+        Input("toggle-btn", "n_clicks"),
         State("mode-selector", "value"),
         State("channel-selector", "value"),
         State("sample-rate-input", "value"),
@@ -86,9 +87,8 @@ def register_callbacks(app: Dash) -> None:
         State("cal-offset", "value"),
         State("session-state", "data"),
     )
-    def handle_start_stop(
-        start_clicks,
-        stop_clicks,
+    def handle_toggle(
+        n_clicks,
         mode,
         channel,
         sample_rate,
@@ -102,15 +102,26 @@ def register_callbacks(app: Dash) -> None:
         global _reader, _logger_thread, _calibration, _data_queue, _plot_buffer
         global _stop_event, _error_event
 
-        ctx = callback_context
-        if not ctx.triggered:
-            return no_update, no_update
-        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        btn_base = {
+            "width": "100%",
+            "padding": "12px",
+            "border": "none",
+            "borderRadius": "5px",
+            "cursor": "pointer",
+            "fontWeight": "bold",
+            "fontSize": "14px",
+            "marginBottom": "15px",
+        }
+        start_style = {**btn_base, "backgroundColor": "#a6e3a1", "color": "#1e1e2e"}
+        stop_style = {**btn_base, "backgroundColor": "#f38ba8", "color": "#1e1e2e"}
 
-        if trigger_id == "start-btn":
-            if session_state.get("running"):
-                return no_update, no_update
+        if not n_clicks:
+            return no_update, no_update, no_update, no_update
 
+        is_running = session_state.get("running", False)
+
+        if not is_running:
+            # START recording
             _stop_event.clear()
             _error_event.clear()
             _data_queue = queue.Queue()
@@ -164,13 +175,22 @@ def register_callbacks(app: Dash) -> None:
                 timer.daemon = True
                 timer.start()
 
-            return {"running": True, "demo_mode": demo_mode}, False
+            return (
+                {"running": True, "demo_mode": demo_mode},
+                False,
+                "Stop Recording",
+                stop_style,
+            )
 
-        elif trigger_id == "stop-btn":
+        else:
+            # STOP recording
             _stop_event.set()
-            return {"running": False, "demo_mode": False}, True
-
-        return no_update, no_update
+            return (
+                {"running": False, "demo_mode": False},
+                True,
+                "Start Recording",
+                start_style,
+            )
 
     @app.callback(
         Output("live-plot", "figure"),
