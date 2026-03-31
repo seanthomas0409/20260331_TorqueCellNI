@@ -14,5 +14,13 @@ if not exist venv\Scripts\activate.bat (
 
 :: Activate venv and run
 call venv\Scripts\activate.bat
-python app.py
+
+:: Try default port first, fall back to 8060 if blocked
+python app.py --port 8050
+if errorlevel 1 (
+    echo.
+    echo Port 8050 blocked. Trying port 8060...
+    echo.
+    python app.py --port 8060
+)
 pause
